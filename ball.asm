@@ -1,51 +1,123 @@
-        EXTRN BallX:BYTE
-        EXTRN BallY:BYTE
+
         public DrawBall
+        public moveBallx
+        public moveBally
+        public game
+
 
 .MODEL SMALL
 .286
+
 .DATA
+
 ;ball 
- ballstart_x dw 157
- ballwidth db 6 
+ ballstart_x dw 156
+ ballwidth db 8
  ballstart_y db 140
- ballheight db 6
+ ballheight db 8
  ballcolor db 13
+
+ ;drawing a real ball
+ ;todraw db ?
+ ;toleave db ?
+ ;transitionState db 0
+
  ball_dy db 1    ; (1 neagtive) (2 positive)
  ball_dx db 1   ; (1 right) (2 left)
+
  
+            
  ;loophelper
- helpheight db ?
- helpwidth db ?
+ rowcount db 1
 
  ;gameStatus
  game db 1  ; (1 still working , 0 gameover)
 
 .code 
+EXTRN barstart_x:word , barwidth:BYTE 
+; drawballreal proc far
+
+;     pusha
+
+;     ; Set up video memory segment
+;     MOV AX, 0A000h          ; Video memory segment for Mode 13h
+;     MOV ES, AX              ; Load segment into ES
+
+ 
+;     mov ax ,0
+;     MOV SI, ballstart_x     
+;     MOV DH, ballstart_y     
+;     MOV CL, ballwidth        
+;     MOV CH, ballheight 
+
+;     mov ah , 0
+;     mov al , cl
+;     div 2
+
+;     mov toleave  ,al
+;     dec toleave
+;     mov todraw ,2
+    
+       
+;   FinishRow:
+; mov ax,0
+; MOV bx, 320        
+; MOV AL, DH
+; push dx
+; MUL bx               
+; pop dx 
+; ADD Ax, SI
+;            ; Add X-coordinate to the result
+; MOV DI, AX           ; Store the offset in DI           
+; add DI ,toleave
+; mov bl , todraw
+    
+
+;   FinishCol:
+;     mov al , ballcolor
+;     MOV ES:[DI], AL 
+;     INC DI  
+
+;     dec bl         
+;    jnz FinishCol         
+
+; cmp transitionState , 1
+; je drawlower
+
+;    mov al , ballwidth
+;    cmp todraw , al
+;    je transition
+
+
+;   add todraw ,2
+;   sub toleave,1
+;   jmp endrow
+
+;   transition:
+;   mov transition ,1 
+;   jmp endrow
+
+
+;    drawlower:
+;    sub todraw ,2
+;    inc toleave
+;    jmp endrow
+
+
+
+; endrow:
+;     INC DH                
+;     dec ch    
+;  JNZ FinishRow    
+;  ret       
+
+;     popa
+
+;     RET
+
+;     drawballreal endp
 
 drawball proc far
-
-    pusha
-
-    ; Set up video memory segment
-    MOV AX, 0A000h          ; Video memory segment for Mode 13h
-    MOV ES, AX              ; Load segment into ES
- 
-    mov ax ,0
-    MOV SI, ballstart_x     
-    MOV DH, ballstart_y     
-    MOV CL, ballwidth        
-    MOV CH, ballheight 
-
-    call drawcomp
-    ; Restore registers
-    popa
-
-    RET
-
-    drawball endp
-
-eraseball proc far
 PUSH AX
     PUSH BX
     PUSH CX
@@ -63,7 +135,7 @@ PUSH AX
     MOV CH, ballheight       
    
 FinishEraseRow:
-    MOV AX, 0               ; Black color for background
+    MOV AX, 0               
     MOV BX, 320             
     MOV AL, DH              
     PUSH DX
@@ -74,7 +146,7 @@ FinishEraseRow:
 
     ; Erase one row
   FinishEraseCol:
-        MOV AL, 0           ; Set black pixel
+        MOV AL, ballcolor           
         MOV ES:[DI], AL
         INC DI  
         DEC CL               
@@ -92,38 +164,16 @@ FinishEraseRow:
     POP BX
     POP AX
 ret
-eraseball ENDP
+drawball ENDP
 
-drawcomp proc near   
-mov helpheight , ch  
-mov helpwidth , cl 
+eraseball proc near
+mov ballcolor , 0
+call drawball
+mov ballcolor , 15
+ret
+eraseball endp
 
-FinishRow:
-mov ax,0
-MOV bx, 320        
-MOV AL, DH
-push dx
-MUL bx               
-pop dx 
-ADD Ax, SI
-           ; Add X-coordinate to the result
-MOV DI, AX           ; Store the offset in DI           
 
-    ; Draw one row
-
-  FinishCol:
-    mov al , barcolor
-    MOV ES:[DI], AL 
-    INC DI  
-    dec cl              
-   jnz FinishCol          
-
-    mov cl, helpwidth
-    INC DH                 
-    DEC helpheight                  
- JNZ FinishRow    
- ret       
-drawcomp endp
 
 moveBallx proc far
  ;mov the ball left and right
@@ -254,7 +304,4 @@ pop dx
 ret
   moveBally endp
 
-    PUSHA
-
-    POPA
-MAIN ENDP
+end
