@@ -1,101 +1,107 @@
         PUBLIC DrawBar
         PUBLIC MoveBar
+        public barstart_x
+        public barwidth
 .286
 .MODEL SMALL          ; Define the memory model
 .STACK 100h           ; Define stack size
 
 .DATA           
 ;bar
-    barstart_x DB 125
+    barstart_x Dw 125
     barstart_y DB 180 
     barHeight db 4
     barwidth db 70
     barcolor db 15 ;(white) 
-    barcurrent db ?
     
 .CODE
 
-DrawBar proc FAR  
-    PUSHA
+eraseBar PROC far
+  mov barcolor ,0
+  call drawbar
+  mov barcolor , 15
 
-    ; Set up video memory segment
+    RET
+eraseBar ENDP
+
+drawbar proc near  
+   pusha
+
+   
     MOV AX, 0A000h          ; Video memory segment for Mode 13h
     MOV ES, AX              ; Load segment into ES
  
     mov ax ,0
-    
-    MOV DL, barstart_x      
+    MOV SI, barstart_x      
     MOV DH, barstart_y      
     MOV CL, barwidth        
     MOV CH, barheight       
-   
 
-    FinishRow:
-        mov ax ,0
-        MOV BX, 320        
-        MOV AL, DH     
-        push dx
-        MUL BX               
-        pop dx 
-        mov bl , dl
-        mov bh , 0
-        ADD Ax, bx
-                ; Add X-coordinate to the result
-        MOV DI, AX           ; Store the offset in DI           
+       
+       FinishRow:
+mov ax,0
+MOV bx, 320        
+MOV AL, DH
+push dx
+MUL bx               
+pop dx 
+ADD Ax, SI
+           
+MOV DI, AX                  
 
-        ; Draw one row
+    
+  FinishCol:
+    mov al , barcolor
+    MOV ES:[DI], AL 
+    INC DI  
+    dec cl              
+   jnz FinishCol          
 
-        FinishCol:
-            mov al , barcolor
-            MOV ES:[DI], AL 
-            INC DI  
-        dec cl               
-        jnz FinishCol          
+    mov cl, barwidth
+    INC DH                 
+    DEC ch                
+ JNZ FinishRow    
+      
+    popa
+     ret 
+drawbar ENDP
 
-        mov cl , barwidth
-        INC DH                 
-    DEC CH                  
-    JNZ FinishRow           
 
-    ; Restore registers
-    POPA
 
-    RET
-DrawBar ENDP
-
-MoveBar PROC FAR
-    MOV AH, 0          ; BIOS function to read key press
-    INT 16h            ; Get key press
-    CMP AL, 27             ; Check if ESC key (27) is pressed (to exit, optional)
-    JE exit                ; Jump to exit if ESC is pressed
+moveBar PROC Far
+                              
 
     CMP AL, 61h              
     JE moveLeft
     CMP AL, 64h            
     JE moveRight
-    RET                     ; Return if no relevant key pressed
+    RET                     
 
 moveLeft:
-    ; Check if the bar is not at the far left
-    MOV AL, barstart_x
-    CMP AL, 0
-    JZ exitLeft            ; If at the far left, do nothing
-    sub  barstart_x  , 5   
-
+    
+    MOV AX, barstart_x
+    CMP AX, 0
+    JZ exitLeft 
+    CALL eraseBar             
+    sub  barstart_x  , 5    
+    CALL drawbar           
     RET
 
 moveRight:
-    ; Check if the bar is not at the far right
-    MOV Al, barstart_x
+    
+    MOV AX, barstart_x
     mov bx , 320
     mov dl , barwidth
     mov dh ,0
     
     sub bX , dx
-    CMP Al, bl ; Check if the bar has reached the far right
-    JZ exitRight           ; If at the far right, do nothing
-    add barstart_x  ,5       ; Move the bar right by 1 unit
+    CMP AX, bX
+    JZ exitRight  
+    CALL eraseBar         
+    add barstart_x  ,5            
+    CALL drawbar      
 
+    mov ax , 0     
     RET
 
 exitLeft:
@@ -103,9 +109,8 @@ exitLeft:
 
 exitRight:
     RET
-exit:
-ret
 
-MoveBar ENDP
+
+moveBar ENDP
 
 END
